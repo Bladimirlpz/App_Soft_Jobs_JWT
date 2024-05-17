@@ -55,6 +55,6 @@ app.post('/usuarios', generarReportes, async (req, res) => {
       message: 'Agregado con exito'
     })
   } catch (error) {
-    res.status(500).json({ message: 'Internal error server' })
+    res.status(500).json({ message: 'Correo ya registrado' })
   }
 })

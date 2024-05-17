@@ -2,7 +2,7 @@ require('dotenv').config({ path: './middleware/.env' })
 const jwt = require('jsonwebtoken')
 
 const authMiddleware = (req, res, next) => {
-  const token = res.headers.authorization?.split(' ')[1]
+  const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     res.status(401).json({ erro: 'No se encontro el token' })
   }

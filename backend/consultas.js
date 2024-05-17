@@ -1,5 +1,6 @@
 const { Pool } = require('pg')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 require('dotenv').config({ path: './.env' })
 
 const pool = new Pool({
@@ -11,16 +12,11 @@ const pool = new Pool({
 })
 
 // Funcion para obtener  usuarios
-const obtenerUsuario = async () => {
-  const consulta = 'SELECT * FROM usuarios;'
-  const value = []
-  const { rowCount, rows } = await pool.query(consulta, value)
-  if (!rowCount) {
-    // eslint-disable-next-line no-throw-literal
-    throw { code: 204, message: 'Usuario no encontrado' }
-  } else {
-    return rows
-  }
+const obtenerUsuario = async (email) => {
+  const value = [email]
+  const consulta = 'SELECT * FROM usuarios WHERE email = $1;'
+  const { rows } = await pool.query(consulta, value)
+  return rows
 }
 
 // Funcion para autenticacion de usuarios
@@ -31,9 +27,10 @@ const verificarUsuario = async (email, password) => {
   const { password: passwordEncriptada } = usuario
   const passwordCorrecta = bcrypt.compareSync(password, passwordEncriptada)
   if (!passwordCorrecta || !rowCount) {
-    // eslint-disable-next-line no-throw-literal
-    throw { code: 401, message: 'Email o contraseña incorrecta' }
+    throw new Error('Contraseña incorrecta')
   }
+  const token = jwt.sign({ email: usuario.email, rol: usuario.rol, lenguage: usuario.lenguage }, process.env.JWT_SECRET, { expiresIn: '10h' })
+  return token
 }
 
 // Funcion para registrar usuarios
@@ -42,8 +39,9 @@ const registrarUsuario = async (usuario) => {
   const passwordEncriptada = bcrypt.hashSync(password)
   password = passwordEncriptada
   const values = [email, passwordEncriptada, rol, lenguage]
-  const consulta = 'INSERT INTO usuarios values (DEFAULT, $1, $2, $3, $4)'
-  await pool.query(consulta, values)
+  const consulta = 'INSERT INTO usuarios values (DEFAULT, $1, $2, $3, $4) RETURNING *;'
+  const { rows } = await pool.query(consulta, values)
+  return rows
 }
 
 module.exports = { verificarUsuario, registrarUsuario, obtenerUsuario }
